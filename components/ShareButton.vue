@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import type { LightningReceipt } from '~/types/index'
 
 import { Icon } from '@iconify/vue'
-import { useShare } from '@vueuse/core'
+import { useShare, useClipboard } from '@vueuse/core'
 
 import { Button } from '~/components/ui/button'
 
@@ -12,7 +12,8 @@ const props = defineProps<{
   form: LightningReceipt
 }>()
 
-const { share, isSupported } = useShare()
+const { share, isSupported: isShareSupported } = useShare()
+const { copy, isSupported: isClipboardSupported } = useClipboard()
 
 const link = computed(() => {
   const url = new URL(window.location.href)
@@ -24,7 +25,7 @@ const link = computed(() => {
 })
 
 const isDisabled = computed(
-  () => isSupported && !(props.form.invoice === '' || props.form.preimage === ''),
+  () => !(props.form.invoice === '' || props.form.preimage === ''),
 )
 
 function startShare() {
@@ -34,10 +35,30 @@ function startShare() {
     url: link.value,
   })
 }
+
+function copyLink() {
+  copy(link.value)
+}
 </script>
 
 <template>
-  <Button v-if="isDisabled" @click.prevent="startShare" variant="secondary">
-    <Icon icon="lucide:share-2" /> Share
-  </Button>
+  <div class="flex gap-2">
+    <!-- Native Share Button (if supported) -->
+    <Button 
+      v-if="isShareSupported && isDisabled" 
+      @click.prevent="startShare" 
+      variant="secondary"
+    >
+      <Icon icon="lucide:share-2" /> Share
+    </Button>
+    
+    <!-- Copy Link Button (always available) -->
+    <Button 
+      v-if="isClipboardSupported && isDisabled" 
+      @click.prevent="copyLink" 
+      variant="outline"
+    >
+      <Icon icon="lucide:copy" /> Copy Link
+    </Button>
+  </div>
 </template>
